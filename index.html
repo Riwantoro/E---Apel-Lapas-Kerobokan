@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Buku Apel Digital | Lapas Kelas IIA Kerobokan</title>
+    <script>
+      // Polyfill for process.env to prevent runtime crashes in environments where it's undefined (e.g. browser)
+      if (typeof process === "undefined") {
+        window.process = { env: {} };
+      }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://res.cloudinary.com" />
+    <link rel="preload" as="image" href="https://res.cloudinary.com/dim98gun7/image/upload/v1769353691/Logo_Kementrian_Imigrasi_dan_Pemasyarakatan__2024_1_ihjxaz.png" />
+    <style>
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      @media print {
+        body {
+          background: #ffffff !important;
+          color: #0f172a !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        table, th, td {
+          border-color: #94a3b8 !important;
+        }
+        input, select, button {
+          color: #0f172a !important;
+          background: transparent !important;
+          border-color: transparent !important;
+          box-shadow: none !important;
+        }
+        input {
+          -webkit-appearance: none;
+          appearance: none;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js",
+    "firebase/database": "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js",
+    "firebase/": "https://esm.sh/firebase@^12.8.0/"
+  }
+}
+</script>
+</head>
+  <body class="bg-slate-100 text-slate-800 min-h-screen">
+    <div id="root" class="min-h-screen"></div>
+    <script type="module" src="./index.tsx"></script>
+  </body>
+</html>
