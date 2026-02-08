@@ -134,6 +134,15 @@ const initialWisma = (() => {
   return fromWbp.length > 0 ? fromWbp : fallbackWisma;
 })();
 
+const ensureRoom = (data: Wisma[], wismaName: string, roomName: string): Wisma[] => {
+  return data.map((wisma) => {
+    if (wisma.name.toLowerCase() !== wismaName.toLowerCase()) return wisma;
+    const exists = wisma.rooms.some((room) => room.name === roomName);
+    if (exists) return wisma;
+    return { ...wisma, rooms: [...wisma.rooms, { name: roomName, names: [] }] };
+  });
+};
+
 const STORAGE_KEY = 'lapas-buku-apel-state-v2';
 
 type PersistedState = {
@@ -141,6 +150,8 @@ type PersistedState = {
   roomGrid: Record<string, RoomGridRow>;
   petugasNama: string;
   catatanApel: string;
+  reguPagiSiang: string;
+  reguMalam: string;
 };
 
 const formatDate = () =>
@@ -174,7 +185,7 @@ const compareRoom = (a: Room, b: Room) => {
 };
 
 const App: React.FC = () => {
-  const [wismaData, setWismaData] = useState<Wisma[]>(initialWisma);
+  const [wismaData, setWismaData] = useState<Wisma[]>(ensureRoom(initialWisma, 'Arjuna', 'F1'));
   const [roomGrid, setRoomGrid] = useState<Record<string, RoomGridRow>>({});
   const [summaryText, setSummaryText] = useState('');
   const [baruCount, setBaruCount] = useState('');
@@ -187,6 +198,8 @@ const App: React.FC = () => {
   const [kerjaLuarCount, setKerjaLuarCount] = useState('');
   const [petugasNama, setPetugasNama] = useState('');
   const [catatanApel, setCatatanApel] = useState('');
+  const [reguPagiSiang, setReguPagiSiang] = useState('');
+  const [reguMalam, setReguMalam] = useState('');
 
   const [selectedWisma, setSelectedWisma] = useState(initialWisma[0].name);
   const [selectedRoom, setSelectedRoom] = useState(initialWisma[0].rooms[0].name);
@@ -202,10 +215,12 @@ const App: React.FC = () => {
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw) as PersistedState;
-      if (parsed.wismaData) setWismaData(parsed.wismaData);
+      if (parsed.wismaData) setWismaData(ensureRoom(parsed.wismaData, 'Arjuna', 'F1'));
       if (parsed.roomGrid) setRoomGrid(parsed.roomGrid);
       if (parsed.petugasNama) setPetugasNama(parsed.petugasNama);
       if (parsed.catatanApel) setCatatanApel(parsed.catatanApel);
+      if (parsed.reguPagiSiang) setReguPagiSiang(parsed.reguPagiSiang);
+      if (parsed.reguMalam) setReguMalam(parsed.reguMalam);
     } catch (error) {
       console.error('Gagal memuat data lokal', error);
     }
@@ -217,9 +232,11 @@ const App: React.FC = () => {
       roomGrid,
       petugasNama,
       catatanApel,
+      reguPagiSiang,
+      reguMalam,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [wismaData, roomGrid, petugasNama, catatanApel]);
+  }, [wismaData, roomGrid, petugasNama, catatanApel, reguPagiSiang, reguMalam]);
 
   const allRooms = useMemo(() => {
     return wismaData.flatMap((wisma) =>
@@ -297,6 +314,8 @@ const App: React.FC = () => {
     return value !== undefined ? `${value} ORANG` : '- ORANG';
   };
 
+  const isNightShift = useMemo(() => new Date().getHours() >= 18, []);
+
   const generateSummary = () => {
     const dateText = formatDateLong().toUpperCase();
     const labelWidth = 24;
@@ -309,6 +328,9 @@ const App: React.FC = () => {
 
     const lines = [
       `SELAMAT SORE, IJIN MELAPORKAN HASIL APEL SORE WBP ( ${dateText} )`,
+      '',
+      `REGU APEL PAGI/SIANG/SORE : ${reguPagiSiang || '-'}`,
+      `REGU APEL MALAM           : ${reguMalam || '-'}`,
       '',
       bulletLabel('WISMA YUDISTIRA') + lookupWisma('yudistira'),
       bulletLabel('WISMA BIMA') + lookupWisma('bima'),
@@ -390,7 +412,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800">
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white">
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white no-print">
         <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-white/10 rounded-xl p-2 border border-white/20">
@@ -418,17 +440,22 @@ const App: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
         {wismaData.map((wisma) => (
-          <div key={wisma.name} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div
+            key={wisma.name}
+            className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm print-wisma"
+          >
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Buku Apel</p>
-                <h2 className="text-lg font-semibold text-slate-800">{wisma.name.toUpperCase()}</h2>
+                <p className="text-xs uppercase tracking-[0.3em] text-slate-400 no-print">Buku Apel</p>
+                <h2 className="text-lg font-semibold text-slate-800 print-wisma-title">
+                  {wisma.name.toUpperCase()}
+                </h2>
               </div>
-              <div className="text-xs text-slate-500">Tanggal: {formatDate()}</div>
+              <div className="text-xs text-slate-500 print-wisma-date">Tanggal: {formatDate()}</div>
             </div>
 
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-[1100px] w-full text-[12px] border border-slate-200">
+            <div className="mt-4 overflow-x-auto print-table-wrap">
+              <table className="min-w-[1100px] w-full text-[12px] border border-slate-200 print-table">
                 <thead className="bg-slate-100 text-slate-600">
                   <tr>
                     <th rowSpan={2} className="border border-slate-200 px-2 py-2 text-center">Kmr</th>
@@ -571,7 +598,31 @@ const App: React.FC = () => {
             />
           </div>
 
-          <div className="mt-4 grid md:grid-cols-[1fr,1fr] gap-3">
+          <div className="mt-4 grid md:grid-cols-2 gap-3">
+            <input
+              type="text"
+              value={reguPagiSiang}
+              onChange={(event) => setReguPagiSiang(event.target.value)}
+              placeholder="Regu Apel Pagi/Siang/Sore"
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              disabled={isNightShift}
+            />
+            <input
+              type="text"
+              value={reguMalam}
+              onChange={(event) => setReguMalam(event.target.value)}
+              placeholder="Regu Apel Malam"
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              disabled={!isNightShift}
+            />
+          </div>
+          <p className="text-xs text-slate-500 mt-2">
+            {isNightShift
+              ? 'Setelah pukul 18.00, hanya Regu Apel Malam yang bisa diubah.'
+              : 'Sebelum pukul 18.00, Regu Apel Pagi/Siang/Sore yang bisa diubah.'}
+          </p>
+
+          <div className="mt-3 grid md:grid-cols-[1fr,1fr] gap-3">
             <input
               type="text"
               value={petugasNama}
