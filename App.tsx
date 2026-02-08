@@ -206,6 +206,8 @@ const App: React.FC = () => {
   const [reguPagiSiang, setReguPagiSiang] = useState('');
   const [reguMalam, setReguMalam] = useState('');
   const [savedShifts, setSavedShifts] = useState({ pagi: false, siang: false, malam: false });
+  const [unlockPassword, setUnlockPassword] = useState('');
+  const [unlockError, setUnlockError] = useState('');
 
   const [selectedWisma, setSelectedWisma] = useState(initialWisma[0].name);
   const [selectedRoom, setSelectedRoom] = useState(initialWisma[0].rooms[0].name);
@@ -688,6 +690,35 @@ const App: React.FC = () => {
           <p className="text-xs text-slate-500 mt-2">
             Shift aktif: {currentShift.toUpperCase()}. Kolom shift yang sudah disimpan akan terkunci (biru).
           </p>
+
+          <div className="mt-4 grid md:grid-cols-[1fr,auto] gap-3 items-center">
+            <input
+              type="password"
+              value={unlockPassword}
+              onChange={(event) => {
+                setUnlockPassword(event.target.value);
+                if (unlockError) setUnlockError('');
+              }}
+              placeholder="Password buka kunci"
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (unlockPassword === 'azwarganteng') {
+                  setSavedShifts({ pagi: false, siang: false, malam: false });
+                  setUnlockPassword('');
+                  setUnlockError('');
+                } else {
+                  setUnlockError('Password salah.');
+                }
+              }}
+              className="px-4 py-2 rounded-lg bg-rose-500 text-white text-sm"
+            >
+              Buka Kunci
+            </button>
+          </div>
+          {unlockError && <p className="text-xs text-rose-500 mt-1">{unlockError}</p>}
 
           <div className="mt-3 flex flex-wrap gap-3">
             <button
