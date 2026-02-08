@@ -152,6 +152,11 @@ type PersistedState = {
   catatanApel: string;
   reguPagiSiang: string;
   reguMalam: string;
+  savedShifts: {
+    pagi: boolean;
+    siang: boolean;
+    malam: boolean;
+  };
 };
 
 const formatDate = () =>
@@ -200,6 +205,7 @@ const App: React.FC = () => {
   const [catatanApel, setCatatanApel] = useState('');
   const [reguPagiSiang, setReguPagiSiang] = useState('');
   const [reguMalam, setReguMalam] = useState('');
+  const [savedShifts, setSavedShifts] = useState({ pagi: false, siang: false, malam: false });
 
   const [selectedWisma, setSelectedWisma] = useState(initialWisma[0].name);
   const [selectedRoom, setSelectedRoom] = useState(initialWisma[0].rooms[0].name);
@@ -221,6 +227,7 @@ const App: React.FC = () => {
       if (parsed.catatanApel) setCatatanApel(parsed.catatanApel);
       if (parsed.reguPagiSiang) setReguPagiSiang(parsed.reguPagiSiang);
       if (parsed.reguMalam) setReguMalam(parsed.reguMalam);
+      if (parsed.savedShifts) setSavedShifts(parsed.savedShifts);
     } catch (error) {
       console.error('Gagal memuat data lokal', error);
     }
@@ -234,9 +241,10 @@ const App: React.FC = () => {
       catatanApel,
       reguPagiSiang,
       reguMalam,
+      savedShifts,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [wismaData, roomGrid, petugasNama, catatanApel, reguPagiSiang, reguMalam]);
+  }, [wismaData, roomGrid, petugasNama, catatanApel, reguPagiSiang, reguMalam, savedShifts]);
 
   const allRooms = useMemo(() => {
     return wismaData.flatMap((wisma) =>
@@ -315,6 +323,22 @@ const App: React.FC = () => {
   };
 
   const isNightShift = useMemo(() => new Date().getHours() >= 18, []);
+
+  const currentShift = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour >= 18) return 'malam';
+    if (hour >= 12) return 'siang';
+    return 'pagi';
+  }, []);
+
+  const shiftOrder: Record<'pagi' | 'siang' | 'malam', number> = { pagi: 0, siang: 1, malam: 2 };
+
+  const fieldShift = (field: keyof RoomGridRow): 'pagi' | 'siang' | 'malam' | 'bebas' => {
+    if (field === 'ket') return 'bebas';
+    if (field === 'pagi' || field === 'keluarPagi' || field === 'masukPagi') return 'pagi';
+    if (field === 'siang' || field === 'keluarSiang' || field === 'masukSiang' || field === 'sore') return 'siang';
+    return 'malam';
+  };
 
   const generateSummary = () => {
     const dateText = formatDateLong().toUpperCase();
@@ -508,14 +532,33 @@ const App: React.FC = () => {
                           ['ket', row.ket],
                         ] as Array<[keyof RoomGridRow, string]>).map(([field, value]) => (
                           <td key={field} className="border border-slate-200 px-1 py-1 text-center">
-                            <input
-                              type={field === 'ket' ? 'text' : 'number'}
-                              min={field === 'ket' ? undefined : 0}
-                              value={value}
-                              onChange={(event) => updateGridRow(wisma.name, room.name, field, event.target.value)}
-                              placeholder={field === 'pagi' ? String(room.names.length) : ''}
-                              className={`bg-transparent focus:outline-none ${field === 'ket' ? 'w-32 text-left px-2' : 'w-16 text-center'}`}
-                            />
+                            {(() => {
+                              const shift = fieldShift(field);
+                              const isFree = shift === 'bebas';
+                              const isSaved = !isFree && savedShifts[shift];
+                              const isPast = !isFree && shiftOrder[shift] < shiftOrder[currentShift];
+                              const isLocked = isPast || isSaved;
+                              const baseClass =
+                                field === 'ket' ? 'w-32 text-left px-2' : 'w-16 text-center';
+                              const stateClass = isSaved
+                                ? 'bg-blue-100 text-blue-900'
+                                : isPast
+                                ? 'bg-slate-100 text-slate-400'
+                                : 'bg-transparent';
+                              return (
+                                <input
+                                  type={field === 'ket' ? 'text' : 'number'}
+                                  min={field === 'ket' ? undefined : 0}
+                                  value={value}
+                                  onChange={(event) =>
+                                    updateGridRow(wisma.name, room.name, field, event.target.value)
+                                  }
+                                  placeholder={field === 'pagi' ? String(room.names.length) : ''}
+                                  className={`focus:outline-none ${baseClass} ${stateClass}`}
+                                  disabled={isLocked && field !== 'ket'}
+                                />
+                              );
+                            })()}
                           </td>
                         ))}
                       </tr>
@@ -634,6 +677,7 @@ const App: React.FC = () => {
               type="button"
               onClick={() => {
                 generateSummary();
+                setSavedShifts((prev) => ({ ...prev, [currentShift]: true }));
                 reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
               className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm"
@@ -641,6 +685,9 @@ const App: React.FC = () => {
               Simpan
             </button>
           </div>
+          <p className="text-xs text-slate-500 mt-2">
+            Shift aktif: {currentShift.toUpperCase()}. Kolom shift yang sudah disimpan akan terkunci (biru).
+          </p>
 
           <div className="mt-3 flex flex-wrap gap-3">
             <button
