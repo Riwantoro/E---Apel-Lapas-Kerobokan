@@ -672,7 +672,7 @@ const App: React.FC = () => {
           <h2 className="text-lg font-semibold text-slate-800">Laporan Apel</h2>
           <p className="text-sm text-slate-500">Klik generate untuk membuat laporan otomatis.</p>
 
-          <div className="mt-4 grid md:grid-cols-4 gap-3">
+          <div className="mt-4 grid md:grid-cols-4 gap-3 print-hide">
             <input
               type="text"
               value={`Baru: ${ketTotals.Baru}`}
@@ -735,7 +735,7 @@ const App: React.FC = () => {
             />
           </div>
 
-          <div className="mt-4 grid md:grid-cols-2 gap-3">
+          <div className="mt-4 grid md:grid-cols-2 gap-3 print-hide">
             <select
               value={reguPagiSiang}
               onChange={(event) => setReguPagiSiang(event.target.value)}
@@ -767,7 +767,7 @@ const App: React.FC = () => {
               : 'Sebelum pukul 18.00, Regu Apel Pagi/Siang/Sore yang bisa diubah.'}
           </p>
 
-          <div className="mt-3 grid md:grid-cols-[1fr,1fr] gap-3">
+          <div className="mt-3 grid md:grid-cols-[1fr,1fr] gap-3 print-hide">
             <input
               type="text"
               value={petugasNama}
@@ -792,11 +792,11 @@ const App: React.FC = () => {
               Simpan
             </button>
           </div>
-          <p className="text-xs text-slate-500 mt-2">
+          <p className="text-xs text-slate-500 mt-2 print-hide">
             Shift aktif: {currentShift.toUpperCase()}. Kolom shift yang sudah disimpan akan terkunci (biru).
           </p>
 
-          <div className="mt-4 grid md:grid-cols-[1fr,auto] gap-3 items-center">
+          <div className="mt-4 grid md:grid-cols-[1fr,auto] gap-3 items-center print-hide">
             <input
               type="password"
               value={unlockPassword}
@@ -827,9 +827,9 @@ const App: React.FC = () => {
               Buka Kunci
             </button>
           </div>
-          {unlockError && <p className="text-xs text-rose-500 mt-1">{unlockError}</p>}
+          {unlockError && <p className="text-xs text-rose-500 mt-1 print-hide">{unlockError}</p>}
 
-          <div className="mt-3 flex flex-wrap gap-3">
+          <div className="mt-3 flex flex-wrap gap-3 print-hide">
             <button
               type="button"
               onClick={() => {
@@ -854,7 +854,7 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 print-hide">
             <label className="text-xs uppercase tracking-wider text-slate-500">Catatan Kegiatan Apel (Opsional)</label>
             <textarea
               value={catatanApel}

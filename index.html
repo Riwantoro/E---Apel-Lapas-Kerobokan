@@ -19,12 +19,67 @@
         font-family: 'Plus Jakarta Sans', sans-serif;
       }
       @media print {
+        @page {
+          size: A4;
+          margin: 12mm;
+        }
         body {
           background: #ffffff !important;
           color: #0f172a !important;
         }
         .no-print {
           display: none !important;
+        }
+        .print-wisma {
+          page-break-inside: avoid;
+          break-inside: avoid-page;
+          margin: 0 0 10mm 0 !important;
+          box-shadow: none !important;
+          border: none !important;
+          padding: 0 !important;
+        }
+        .print-wisma {
+          break-after: page;
+          page-break-after: always;
+        }
+        .print-wisma:last-of-type {
+          break-after: auto;
+          page-break-after: auto;
+        }
+        .print-wisma-title {
+          font-size: 16pt !important;
+          font-weight: 700 !important;
+          margin: 0 0 2mm 0 !important;
+          text-align: left !important;
+        }
+        .print-wisma-date {
+          font-size: 10pt !important;
+          margin-top: 2mm !important;
+        }
+        .print-table-wrap {
+          overflow: visible !important;
+        }
+        .print-table {
+          width: 100% !important;
+          min-width: 0 !important;
+          font-size: 9pt !important;
+          border-collapse: collapse !important;
+        }
+        .print-table th,
+        .print-table td {
+          padding: 2mm 1.5mm !important;
+        }
+        .print-wisma:last-of-type {
+          margin-bottom: 0 !important;
+        }
+        .print-hide {
+          display: none !important;
+        }
+        textarea {
+          line-height: 1.2 !important;
+        }
+        .print-footer {
+          margin-top: 8mm !important;
         }
         table, th, td {
           border-color: #94a3b8 !important;
