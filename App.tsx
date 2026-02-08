@@ -296,29 +296,37 @@ const App: React.FC = () => {
 
   const generateSummary = () => {
     const dateText = formatDateLong().toUpperCase();
+    const labelWidth = 24;
+    const numberWidth = 6;
+    const bulletLabel = (label: string) => `•  ${label.padEnd(labelWidth)}: `;
+    const valueText = (value: string | number) =>
+      String(value).padStart(numberWidth) + ' ORANG';
+    const reportLabel = (label: string) => `•  ${label.padEnd(labelWidth)}: `;
+    const detailLabel = (label: string) => `  ${label.padEnd(labelWidth)}: `;
+
     const lines = [
       `SELAMAT SORE, IJIN MELAPORKAN HASIL APEL SORE WBP ( ${dateText} )`,
       '',
-      `•  WISMA YUDISTIRA : ${lookupWisma('yudistira')}`,
-      `•  WISMA BIMA          : ${lookupWisma('bima')}`,
-      `•  ARJUNA                   : ${lookupWisma('arjuna')}`,
-      `•  NAKULA                   : ${lookupWisma('nakula')}`,
-      `•  POLIKLINIK              : ${lookupWisma('poliklinik')}`,
-      `•  DAPUR                      : ${lookupWisma('dapur')}`,
+      bulletLabel('WISMA YUDISTIRA') + lookupWisma('yudistira'),
+      bulletLabel('WISMA BIMA') + lookupWisma('bima'),
+      bulletLabel('ARJUNA') + lookupWisma('arjuna'),
+      bulletLabel('NAKULA') + lookupWisma('nakula'),
+      bulletLabel('POLIKLINIK') + lookupWisma('poliklinik'),
+      bulletLabel('DAPUR') + lookupWisma('dapur'),
       '',
-      `•  ISI LAPAS  ( SIANG )      : ${totalSiang} ORANG`,
-      `•  ISI LAPAS ( SORE )    : ${totalSore} ORANG`,
+      reportLabel('ISI LAPAS  ( SIANG )') + valueText(totalSiang),
+      reportLabel('ISI LAPAS ( SORE )') + valueText(totalSore),
       'KETERANGAN :',
-      `                       BARU   : ${baruCount || '-'} ORANG`,
-      `                       BEBAS : ${bebasCount || '-'} ORANG`,
+      detailLabel('BARU') + valueText(baruCount || '-'),
+      detailLabel('BEBAS') + valueText(bebasCount || '-'),
       '',
-      `•  ISI DALAM LAPAS : ${dalamLapasCount || '-'} ORANG`,
-      `•  DI LUAR LAPAS      : ${luarLapasCount || '-'} ORANG`,
+      reportLabel('ISI DALAM LAPAS') + valueText(dalamLapasCount || '-'),
+      reportLabel('DI LUAR LAPAS') + valueText(luarLapasCount || '-'),
       'KETERANGAN:',
-      `•  RS              : ${rsCount || '-'} ORANG`,
-      `•  BEROBAT  : ${berobatCount || '-'} ORANG`,
-      `•  SIDANG     : ${sidangCount || '-'} ORANG`,
-      `•  KERJA LUAR: ${kerjaLuarCount || '-'} ORANG`,
+      reportLabel('RS') + valueText(rsCount || '-'),
+      reportLabel('BEROBAT') + valueText(berobatCount || '-'),
+      reportLabel('SIDANG') + valueText(sidangCount || '-'),
+      reportLabel('KERJA LUAR') + valueText(kerjaLuarCount || '-'),
     ];
     setSummaryText(lines.join('\n'));
   };
