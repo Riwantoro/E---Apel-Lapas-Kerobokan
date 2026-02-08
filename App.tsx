@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import wbpData from './data/wbp.json';
 
 const LOGO_URL = "https://res.cloudinary.com/dim98gun7/image/upload/v1769353691/Logo_Kementrian_Imigrasi_dan_Pemasyarakatan__2024_1_ihjxaz.png";
@@ -17,7 +17,6 @@ type RoomGridRow = {
   sore: string;
   malam: string;
   ket: string;
-  petugas: string;
 };
 
 const emptyGridRow = (): RoomGridRow => ({
@@ -30,7 +29,6 @@ const emptyGridRow = (): RoomGridRow => ({
   sore: '',
   malam: '',
   ket: '',
-  petugas: '',
 });
 
 const fallbackWisma: Wisma[] = [
@@ -141,7 +139,8 @@ const STORAGE_KEY = 'lapas-buku-apel-state-v2';
 type PersistedState = {
   wismaData: Wisma[];
   roomGrid: Record<string, RoomGridRow>;
-  lantaiByWisma: Record<string, string>;
+  petugasNama: string;
+  catatanApel: string;
 };
 
 const formatDate = () =>
@@ -177,7 +176,6 @@ const compareRoom = (a: Room, b: Room) => {
 const App: React.FC = () => {
   const [wismaData, setWismaData] = useState<Wisma[]>(initialWisma);
   const [roomGrid, setRoomGrid] = useState<Record<string, RoomGridRow>>({});
-  const [lantaiByWisma, setLantaiByWisma] = useState<Record<string, string>>({});
   const [summaryText, setSummaryText] = useState('');
   const [baruCount, setBaruCount] = useState('');
   const [bebasCount, setBebasCount] = useState('');
@@ -187,6 +185,8 @@ const App: React.FC = () => {
   const [berobatCount, setBerobatCount] = useState('');
   const [sidangCount, setSidangCount] = useState('');
   const [kerjaLuarCount, setKerjaLuarCount] = useState('');
+  const [petugasNama, setPetugasNama] = useState('');
+  const [catatanApel, setCatatanApel] = useState('');
 
   const [selectedWisma, setSelectedWisma] = useState(initialWisma[0].name);
   const [selectedRoom, setSelectedRoom] = useState(initialWisma[0].rooms[0].name);
@@ -195,6 +195,7 @@ const App: React.FC = () => {
   const [editName, setEditName] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [moveTarget, setMoveTarget] = useState<string>('');
+  const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -203,7 +204,8 @@ const App: React.FC = () => {
       const parsed = JSON.parse(raw) as PersistedState;
       if (parsed.wismaData) setWismaData(parsed.wismaData);
       if (parsed.roomGrid) setRoomGrid(parsed.roomGrid);
-      if (parsed.lantaiByWisma) setLantaiByWisma(parsed.lantaiByWisma);
+      if (parsed.petugasNama) setPetugasNama(parsed.petugasNama);
+      if (parsed.catatanApel) setCatatanApel(parsed.catatanApel);
     } catch (error) {
       console.error('Gagal memuat data lokal', error);
     }
@@ -213,10 +215,11 @@ const App: React.FC = () => {
     const payload: PersistedState = {
       wismaData,
       roomGrid,
-      lantaiByWisma,
+      petugasNama,
+      catatanApel,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [wismaData, roomGrid, lantaiByWisma]);
+  }, [wismaData, roomGrid, petugasNama, catatanApel]);
 
   const allRooms = useMemo(() => {
     return wismaData.flatMap((wisma) =>
@@ -328,6 +331,11 @@ const App: React.FC = () => {
       reportLabel('SIDANG') + valueText(sidangCount || '-'),
       reportLabel('KERJA LUAR') + valueText(kerjaLuarCount || '-'),
     ];
+    if (catatanApel.trim()) {
+      lines.push('');
+      lines.push('CATATAN KEGIATAN:');
+      lines.push(catatanApel.trim());
+    }
     setSummaryText(lines.join('\n'));
   };
 
@@ -414,29 +422,9 @@ const App: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Buku Apel</p>
-                <h2 className="text-lg font-semibold text-slate-800">
-                  {wisma.name.toUpperCase()}
-                  {lantaiByWisma[wisma.name] ? ` (LANTAI ${lantaiByWisma[wisma.name]})` : ''}
-                </h2>
+                <h2 className="text-lg font-semibold text-slate-800">{wisma.name.toUpperCase()}</h2>
               </div>
               <div className="text-xs text-slate-500">Tanggal: {formatDate()}</div>
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-3 no-print">
-              <label className="text-xs uppercase tracking-wider text-slate-400">Lantai</label>
-              <input
-                type="number"
-                min={0}
-                value={lantaiByWisma[wisma.name] ?? ''}
-                onChange={(event) =>
-                  setLantaiByWisma((prev) => ({
-                    ...prev,
-                    [wisma.name]: event.target.value,
-                  }))
-                }
-                className="w-20 px-2 py-1 border border-slate-200 rounded-md text-xs"
-                placeholder="1"
-              />
             </div>
 
             <div className="mt-4 overflow-x-auto">
@@ -451,8 +439,6 @@ const App: React.FC = () => {
                     <th colSpan={1} className="border border-slate-200 px-2 py-2 text-center">Isi</th>
                     <th colSpan={1} className="border border-slate-200 px-2 py-2 text-center">Isi</th>
                     <th rowSpan={2} className="border border-slate-200 px-2 py-2 text-center">Ket</th>
-                    <th rowSpan={2} className="border border-slate-200 px-2 py-2 text-center">Petugas</th>
-                    <th rowSpan={2} className="border border-slate-200 px-2 py-2 text-center">Simpan</th>
                   </tr>
                   <tr>
                     <th className="border border-slate-200 px-2 py-1 text-center">Pagi</th>
@@ -505,25 +491,6 @@ const App: React.FC = () => {
                             />
                           </td>
                         ))}
-                        <td className="border border-slate-200 px-1 py-1 text-center">
-                          <input
-                            type="text"
-                            value={row.petugas}
-                            onChange={(event) =>
-                              updateGridRow(wisma.name, room.name, 'petugas', event.target.value)
-                            }
-                            placeholder="Nama petugas"
-                            className="w-32 bg-transparent text-left px-2 focus:outline-none"
-                          />
-                        </td>
-                        <td className="border border-slate-200 px-2 py-1 text-center">
-                          <button
-                            type="button"
-                            className="px-2 py-1 text-[11px] rounded-md bg-slate-900 text-white"
-                          >
-                            Simpan
-                          </button>
-                        </td>
                       </tr>
                     );
                   })}
@@ -533,8 +500,8 @@ const App: React.FC = () => {
           </div>
         ))}
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-800">Ringkasan Apel Sore</h2>
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm" ref={reportRef}>
+          <h2 className="text-lg font-semibold text-slate-800">Laporan Apel</h2>
           <p className="text-sm text-slate-500">Klik generate untuk membuat laporan otomatis.</p>
 
           <div className="mt-4 grid md:grid-cols-4 gap-3">
@@ -604,7 +571,27 @@ const App: React.FC = () => {
             />
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 grid md:grid-cols-[1fr,1fr] gap-3">
+            <input
+              type="text"
+              value={petugasNama}
+              onChange={(event) => setPetugasNama(event.target.value)}
+              placeholder="Nama petugas pengisi buku apel"
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                generateSummary();
+                reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm"
+            >
+              Simpan
+            </button>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={generateSummary}
@@ -621,13 +608,34 @@ const App: React.FC = () => {
             </button>
           </div>
 
+          <div className="mt-4">
+            <label className="text-xs uppercase tracking-wider text-slate-500">Catatan Kegiatan Apel (Opsional)</label>
+            <textarea
+              value={catatanApel}
+              onChange={(event) => setCatatanApel(event.target.value)}
+              rows={3}
+              className="mt-2 w-full border border-slate-200 rounded-lg p-3 text-sm"
+              placeholder="Contoh: Terjadi perkelahian kecil di blok ... / Deteksi dini ..."
+            />
+          </div>
+
           <textarea
             value={summaryText}
             readOnly
             rows={14}
-            className="mt-4 w-full border border-slate-200 rounded-lg p-3 text-sm font-mono text-slate-700"
+            className="mt-4 w-full border border-slate-200 rounded-lg p-3 text-sm font-mono text-slate-700 leading-tight"
             placeholder="Hasil laporan akan muncul di sini."
           />
+
+          <div className="mt-8 text-sm text-slate-700 print-footer">
+            <p>Kerobokan, {formatDate()}</p>
+            <p className="mt-3">Diperiksa oleh</p>
+            <p>Ka. KPLP</p>
+            <div className="mt-10">
+              <p className="font-semibold">Putu Arya Subhawa</p>
+              <p>NIP. 198610112006041001</p>
+            </div>
+          </div>
         </div>
       </div>
 
