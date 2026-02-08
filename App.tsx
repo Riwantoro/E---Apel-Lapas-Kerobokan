@@ -157,6 +157,7 @@ type PersistedState = {
     siang: boolean;
     malam: boolean;
   };
+  reportLocked: boolean;
 };
 
 const formatDate = () =>
@@ -206,6 +207,7 @@ const App: React.FC = () => {
   const [reguPagiSiang, setReguPagiSiang] = useState('');
   const [reguMalam, setReguMalam] = useState('');
   const [savedShifts, setSavedShifts] = useState({ pagi: false, siang: false, malam: false });
+  const [reportLocked, setReportLocked] = useState(false);
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
 
@@ -230,6 +232,7 @@ const App: React.FC = () => {
       if (parsed.reguPagiSiang) setReguPagiSiang(parsed.reguPagiSiang);
       if (parsed.reguMalam) setReguMalam(parsed.reguMalam);
       if (parsed.savedShifts) setSavedShifts(parsed.savedShifts);
+      if (typeof parsed.reportLocked === 'boolean') setReportLocked(parsed.reportLocked);
     } catch (error) {
       console.error('Gagal memuat data lokal', error);
     }
@@ -244,9 +247,19 @@ const App: React.FC = () => {
       reguPagiSiang,
       reguMalam,
       savedShifts,
+      reportLocked,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [wismaData, roomGrid, petugasNama, catatanApel, reguPagiSiang, reguMalam, savedShifts]);
+  }, [
+    wismaData,
+    roomGrid,
+    petugasNama,
+    catatanApel,
+    reguPagiSiang,
+    reguMalam,
+    savedShifts,
+    reportLocked,
+  ]);
 
   const allRooms = useMemo(() => {
     return wismaData.flatMap((wisma) =>
@@ -547,17 +560,37 @@ const App: React.FC = () => {
                                 : isPast
                                 ? 'bg-slate-100 text-slate-400'
                                 : 'bg-transparent';
+                              if (field === 'ket') {
+                                return (
+                                  <select
+                                    value={value}
+                                    onChange={(event) =>
+                                      updateGridRow(wisma.name, room.name, field, event.target.value)
+                                    }
+                                    className={`focus:outline-none ${baseClass} ${stateClass}`}
+                                  >
+                                    <option value="">Pilih</option>
+                                    <option value="Baru">Baru</option>
+                                    <option value="Bebas">Bebas</option>
+                                    <option value="RS">RS</option>
+                                    <option value="Berobat">Berobat</option>
+                                    <option value="Sidang">Sidang</option>
+                                    <option value="Kerja Luar">Kerja Luar</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                  </select>
+                                );
+                              }
                               return (
                                 <input
-                                  type={field === 'ket' ? 'text' : 'number'}
-                                  min={field === 'ket' ? undefined : 0}
+                                  type="number"
+                                  min={0}
                                   value={value}
                                   onChange={(event) =>
                                     updateGridRow(wisma.name, room.name, field, event.target.value)
                                   }
                                   placeholder={field === 'pagi' ? String(room.names.length) : ''}
                                   className={`focus:outline-none ${baseClass} ${stateClass}`}
-                                  disabled={isLocked && field !== 'ket'}
+                                  disabled={isLocked}
                                 />
                               );
                             })()}
@@ -650,7 +683,7 @@ const App: React.FC = () => {
               onChange={(event) => setReguPagiSiang(event.target.value)}
               placeholder="Regu Apel Pagi/Siang/Sore"
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              disabled={isNightShift}
+              disabled={isNightShift || reportLocked}
             />
             <input
               type="text"
@@ -658,7 +691,7 @@ const App: React.FC = () => {
               onChange={(event) => setReguMalam(event.target.value)}
               placeholder="Regu Apel Malam"
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
-              disabled={!isNightShift}
+              disabled={!isNightShift || reportLocked}
             />
           </div>
           <p className="text-xs text-slate-500 mt-2">
@@ -674,15 +707,18 @@ const App: React.FC = () => {
               onChange={(event) => setPetugasNama(event.target.value)}
               placeholder="Nama petugas pengisi buku apel"
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              disabled={reportLocked}
             />
             <button
               type="button"
               onClick={() => {
                 generateSummary();
                 setSavedShifts((prev) => ({ ...prev, [currentShift]: true }));
+                setReportLocked(true);
                 reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
               className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm"
+              disabled={reportLocked}
             >
               Simpan
             </button>
@@ -707,6 +743,7 @@ const App: React.FC = () => {
               onClick={() => {
                 if (unlockPassword === 'azwarganteng') {
                   setSavedShifts({ pagi: false, siang: false, malam: false });
+                  setReportLocked(false);
                   setUnlockPassword('');
                   setUnlockError('');
                 } else {
@@ -745,6 +782,7 @@ const App: React.FC = () => {
               rows={3}
               className="mt-2 w-full border border-slate-200 rounded-lg p-3 text-sm"
               placeholder="Contoh: Terjadi perkelahian kecil di blok ... / Deteksi dini ..."
+              disabled={reportLocked}
             />
           </div>
 
