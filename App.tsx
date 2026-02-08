@@ -194,20 +194,15 @@ const App: React.FC = () => {
   const [wismaData, setWismaData] = useState<Wisma[]>(ensureRoom(initialWisma, 'Arjuna', 'F1'));
   const [roomGrid, setRoomGrid] = useState<Record<string, RoomGridRow>>({});
   const [summaryText, setSummaryText] = useState('');
-  const [baruCount, setBaruCount] = useState('');
-  const [bebasCount, setBebasCount] = useState('');
   const [dalamLapasCount, setDalamLapasCount] = useState('');
   const [luarLapasCount, setLuarLapasCount] = useState('');
-  const [rsCount, setRsCount] = useState('');
-  const [berobatCount, setBerobatCount] = useState('');
-  const [sidangCount, setSidangCount] = useState('');
-  const [kerjaLuarCount, setKerjaLuarCount] = useState('');
   const [petugasNama, setPetugasNama] = useState('');
   const [catatanApel, setCatatanApel] = useState('');
   const [reguPagiSiang, setReguPagiSiang] = useState('');
   const [reguMalam, setReguMalam] = useState('');
   const [savedShifts, setSavedShifts] = useState({ pagi: false, siang: false, malam: false });
   const [reportLocked, setReportLocked] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const [unlockPassword, setUnlockPassword] = useState('');
   const [unlockError, setUnlockError] = useState('');
 
@@ -295,6 +290,33 @@ const App: React.FC = () => {
     }));
   };
 
+  const showToast = (message: string) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(''), 2500);
+  };
+
+  const playNotify = () => {
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.value = 880;
+      gainNode.gain.value = 0.15;
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.2);
+      oscillator.onended = () => ctx.close();
+    } catch {
+      // ignore audio errors
+    }
+  };
+
   const getRoomCount = (wismaName: string, roomName: string, field: keyof RoomGridRow) => {
     const row = getGridRow(wismaName, roomName);
     const raw = row[field];
@@ -330,6 +352,25 @@ const App: React.FC = () => {
       );
     }, 0);
   }, [wismaData, roomGrid]);
+
+  const ketTotals = useMemo(() => {
+    const totals = {
+      Baru: 0,
+      Bebas: 0,
+      RS: 0,
+      Berobat: 0,
+      Sidang: 0,
+      'Kerja Luar': 0,
+      Lainnya: 0,
+    };
+    Object.values(roomGrid).forEach((row) => {
+      const key = row.ket as keyof typeof totals;
+      if (key && totals[key] !== undefined) {
+        totals[key] += 1;
+      }
+    });
+    return totals;
+  }, [roomGrid]);
 
   const lookupWisma = (label: string) => {
     const key = label.toLowerCase();
@@ -381,16 +422,17 @@ const App: React.FC = () => {
       reportLabel('ISI LAPAS  ( SIANG )') + valueText(totalSiang),
       reportLabel('ISI LAPAS ( SORE )') + valueText(totalSore),
       'KETERANGAN :',
-      detailLabel('BARU') + valueText(baruCount || '-'),
-      detailLabel('BEBAS') + valueText(bebasCount || '-'),
+      detailLabel('BARU') + valueText(ketTotals.Baru || '-'),
+      detailLabel('BEBAS') + valueText(ketTotals.Bebas || '-'),
       '',
       reportLabel('ISI DALAM LAPAS') + valueText(dalamLapasCount || '-'),
       reportLabel('DI LUAR LAPAS') + valueText(luarLapasCount || '-'),
       'KETERANGAN:',
-      reportLabel('RS') + valueText(rsCount || '-'),
-      reportLabel('BEROBAT') + valueText(berobatCount || '-'),
-      reportLabel('SIDANG') + valueText(sidangCount || '-'),
-      reportLabel('KERJA LUAR') + valueText(kerjaLuarCount || '-'),
+      reportLabel('RS') + valueText(ketTotals.RS || '-'),
+      reportLabel('BEROBAT') + valueText(ketTotals.Berobat || '-'),
+      reportLabel('SIDANG') + valueText(ketTotals.Sidang || '-'),
+      reportLabel('KERJA LUAR') + valueText(ketTotals['Kerja Luar'] || '-'),
+      reportLabel('LAINNYA') + valueText(ketTotals.Lainnya || '-'),
     ];
     if (catatanApel.trim()) {
       lines.push('');
@@ -476,6 +518,12 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {toastMessage && (
+        <div className="fixed top-5 right-5 z-50 bg-slate-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg">
+          {toastMessage}
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
         {wismaData.map((wisma) => (
@@ -611,20 +659,16 @@ const App: React.FC = () => {
 
           <div className="mt-4 grid md:grid-cols-4 gap-3">
             <input
-              type="number"
-              min={0}
-              value={baruCount}
-              onChange={(event) => setBaruCount(event.target.value)}
-              placeholder="Baru"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              type="text"
+              value={`Baru: ${ketTotals.Baru}`}
+              readOnly
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-rose-600"
             />
             <input
-              type="number"
-              min={0}
-              value={bebasCount}
-              onChange={(event) => setBebasCount(event.target.value)}
-              placeholder="Bebas"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              type="text"
+              value={`Bebas: ${ketTotals.Bebas}`}
+              readOnly
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-rose-600"
             />
             <input
               type="number"
@@ -633,6 +677,7 @@ const App: React.FC = () => {
               onChange={(event) => setDalamLapasCount(event.target.value)}
               placeholder="Isi Dalam Lapas"
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              disabled={reportLocked}
             />
             <input
               type="number"
@@ -641,38 +686,37 @@ const App: React.FC = () => {
               onChange={(event) => setLuarLapasCount(event.target.value)}
               placeholder="Di Luar Lapas"
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              disabled={reportLocked}
             />
             <input
-              type="number"
-              min={0}
-              value={rsCount}
-              onChange={(event) => setRsCount(event.target.value)}
-              placeholder="RS"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              type="text"
+              value={`RS: ${ketTotals.RS}`}
+              readOnly
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-rose-600"
             />
             <input
-              type="number"
-              min={0}
-              value={berobatCount}
-              onChange={(event) => setBerobatCount(event.target.value)}
-              placeholder="Berobat"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              type="text"
+              value={`Berobat: ${ketTotals.Berobat}`}
+              readOnly
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-rose-600"
             />
             <input
-              type="number"
-              min={0}
-              value={sidangCount}
-              onChange={(event) => setSidangCount(event.target.value)}
-              placeholder="Sidang"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              type="text"
+              value={`Sidang: ${ketTotals.Sidang}`}
+              readOnly
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-rose-600"
             />
             <input
-              type="number"
-              min={0}
-              value={kerjaLuarCount}
-              onChange={(event) => setKerjaLuarCount(event.target.value)}
-              placeholder="Kerja Luar"
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
+              type="text"
+              value={`Kerja Luar: ${ketTotals['Kerja Luar']}`}
+              readOnly
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-rose-600"
+            />
+            <input
+              type="text"
+              value={`Lainnya: ${ketTotals.Lainnya}`}
+              readOnly
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-rose-600"
             />
           </div>
 
@@ -716,6 +760,8 @@ const App: React.FC = () => {
                 setSavedShifts((prev) => ({ ...prev, [currentShift]: true }));
                 setReportLocked(true);
                 reportRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                playNotify();
+                showToast('Terima kasih, laporan sudah disimpan.');
               }}
               className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm"
               disabled={reportLocked}
@@ -746,8 +792,11 @@ const App: React.FC = () => {
                   setReportLocked(false);
                   setUnlockPassword('');
                   setUnlockError('');
+                  playNotify();
+                  showToast('Terima kasih, kunci sudah dibuka.');
                 } else {
                   setUnlockError('Password salah.');
+                  playNotify();
                 }
               }}
               className="px-4 py-2 rounded-lg bg-rose-500 text-white text-sm"
@@ -760,14 +809,22 @@ const App: React.FC = () => {
           <div className="mt-3 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={generateSummary}
+              onClick={() => {
+                generateSummary();
+                playNotify();
+                showToast('Terima kasih, laporan berhasil dibuat.');
+              }}
               className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm"
             >
               Generate Laporan
             </button>
             <button
               type="button"
-              onClick={() => navigator.clipboard?.writeText(summaryText)}
+              onClick={() => {
+                navigator.clipboard?.writeText(summaryText);
+                playNotify();
+                showToast('Terima kasih, teks laporan berhasil disalin.');
+              }}
               className="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-sm"
             >
               Salin Teks
