@@ -17,6 +17,7 @@ type RoomGridRow = {
   sore: string;
   malam: string;
   ket: string;
+  ketCount: string;
 };
 
 const emptyGridRow = (): RoomGridRow => ({
@@ -29,6 +30,7 @@ const emptyGridRow = (): RoomGridRow => ({
   sore: '',
   malam: '',
   ket: '',
+  ketCount: '',
 });
 
 const fallbackWisma: Wisma[] = [
@@ -365,8 +367,9 @@ const App: React.FC = () => {
     };
     Object.values(roomGrid).forEach((row) => {
       const key = row.ket as keyof typeof totals;
+      const count = Number(row.ketCount || 0);
       if (key && totals[key] !== undefined) {
-        totals[key] += 1;
+        totals[key] += Number.isNaN(count) ? 0 : count;
       }
     });
     return totals;
@@ -390,7 +393,7 @@ const App: React.FC = () => {
   const shiftOrder: Record<'pagi' | 'siang' | 'malam', number> = { pagi: 0, siang: 1, malam: 2 };
 
   const fieldShift = (field: keyof RoomGridRow): 'pagi' | 'siang' | 'malam' | 'bebas' => {
-    if (field === 'ket') return 'bebas';
+    if (field === 'ket' || field === 'ketCount') return 'bebas';
     if (field === 'pagi' || field === 'keluarPagi' || field === 'masukPagi') return 'pagi';
     if (field === 'siang' || field === 'keluarSiang' || field === 'masukSiang' || field === 'sore') return 'siang';
     return 'malam';
@@ -610,22 +613,34 @@ const App: React.FC = () => {
                                 : 'bg-transparent';
                               if (field === 'ket') {
                                 return (
-                                  <select
-                                    value={value}
-                                    onChange={(event) =>
-                                      updateGridRow(wisma.name, room.name, field, event.target.value)
-                                    }
-                                    className={`focus:outline-none ${baseClass} ${stateClass}`}
-                                  >
-                                    <option value="">Pilih</option>
-                                    <option value="Baru">Baru</option>
-                                    <option value="Bebas">Bebas</option>
-                                    <option value="RS">RS</option>
-                                    <option value="Berobat">Berobat</option>
-                                    <option value="Sidang">Sidang</option>
-                                    <option value="Kerja Luar">Kerja Luar</option>
-                                    <option value="Lainnya">Lainnya</option>
-                                  </select>
+                                  <div className="flex items-center gap-1">
+                                    <select
+                                      value={value}
+                                      onChange={(event) =>
+                                        updateGridRow(wisma.name, room.name, field, event.target.value)
+                                      }
+                                      className={`focus:outline-none ${baseClass} ${stateClass}`}
+                                    >
+                                      <option value="">Pilih</option>
+                                      <option value="Baru">Baru</option>
+                                      <option value="Bebas">Bebas</option>
+                                      <option value="RS">RS</option>
+                                      <option value="Berobat">Berobat</option>
+                                      <option value="Sidang">Sidang</option>
+                                      <option value="Kerja Luar">Kerja Luar</option>
+                                      <option value="Lainnya">Lainnya</option>
+                                    </select>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={row.ketCount}
+                                      onChange={(event) =>
+                                        updateGridRow(wisma.name, room.name, 'ketCount', event.target.value)
+                                      }
+                                      placeholder="Jml"
+                                      className="w-12 text-center bg-transparent focus:outline-none"
+                                    />
+                                  </div>
                                 );
                               }
                               return (
@@ -721,22 +736,30 @@ const App: React.FC = () => {
           </div>
 
           <div className="mt-4 grid md:grid-cols-2 gap-3">
-            <input
-              type="text"
+            <select
               value={reguPagiSiang}
               onChange={(event) => setReguPagiSiang(event.target.value)}
-              placeholder="Regu Apel Pagi/Siang/Sore"
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
               disabled={isNightShift || reportLocked}
-            />
-            <input
-              type="text"
+            >
+              <option value="">Regu Apel Pagi/Siang/Sore</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+            <select
               value={reguMalam}
               onChange={(event) => setReguMalam(event.target.value)}
-              placeholder="Regu Apel Malam"
               className="px-3 py-2 border border-slate-200 rounded-lg text-sm"
               disabled={!isNightShift || reportLocked}
-            />
+            >
+              <option value="">Regu Apel Malam</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
           </div>
           <p className="text-xs text-slate-500 mt-2">
             {isNightShift
